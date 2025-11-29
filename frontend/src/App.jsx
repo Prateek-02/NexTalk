@@ -3,6 +3,7 @@ import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { Home } from "./pages/Home";
 import { Welcome } from "./pages/Welcome";
+import { Profile } from "./pages/Profile";
 import { SocketProvider } from "./context/SocketProvider";
 
 function PrivateRoute({ children }) {
@@ -23,6 +24,16 @@ export const App = () => (
           element={
             <PrivateRoute>
               <Home />
+            </PrivateRoute>
+          }
+        />
+
+        {/* Private Profile */}
+        <Route
+          path="/profile"
+          element={
+            <PrivateRoute>
+              <Profile />
             </PrivateRoute>
           }
         />

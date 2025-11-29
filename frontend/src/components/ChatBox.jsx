@@ -12,6 +12,44 @@ export const ChatBox = ({ selectedContact }) => {
   const endRef = useRef(null);
   const typingTimeouts = useRef({});
 
+  // Format message time
+  const formatMessageTime = (timestamp) => {
+    if (!timestamp) return "";
+    const date = new Date(timestamp);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    
+    // Check if message is from today
+    if (messageDate.getTime() === today.getTime()) {
+      return date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
+    }
+    
+    // Check if message is from yesterday
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (messageDate.getTime() === yesterday.getTime()) {
+      return `Yesterday ${date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      })}`;
+    }
+    
+    // For older messages, show date and time
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
   // Load chat history when selected contact changes
   useEffect(() => {
     if (!selectedContact) {
@@ -41,18 +79,18 @@ export const ChatBox = ({ selectedContact }) => {
       }
     };
 
-    const typingHandler = (user) => {
-      if (user === user?.username) return;
+    const typingHandler = (typingUsername) => {
+      if (typingUsername === user?.username) return;
 
-      setTypingUsers((prev) => (prev.includes(user) ? prev : [...prev, user]));
+      setTypingUsers((prev) => (prev.includes(typingUsername) ? prev : [...prev, typingUsername]));
 
-      if (typingTimeouts.current[user]) {
-        clearTimeout(typingTimeouts.current[user]);
+      if (typingTimeouts.current[typingUsername]) {
+        clearTimeout(typingTimeouts.current[typingUsername]);
       }
 
-      typingTimeouts.current[user] = setTimeout(() => {
-        setTypingUsers((prev) => prev.filter((u) => u !== user));
-        delete typingTimeouts.current[user];
+      typingTimeouts.current[typingUsername] = setTimeout(() => {
+        setTypingUsers((prev) => prev.filter((u) => u !== typingUsername));
+        delete typingTimeouts.current[typingUsername];
       }, 2000);
     };
 
@@ -92,6 +130,7 @@ export const ChatBox = ({ selectedContact }) => {
           sender: { _id: socket.userId, username: user.username }, // ✅ Use user.username from useAuth
           recipient: { _id: selectedContact._id, username: selectedContact.username },
           text: messageText,
+          createdAt: new Date().toISOString(), // Add timestamp for newly sent messages
         };
         setMessages((prev) => [...prev, newMsg]);
       }
@@ -138,7 +177,7 @@ export const ChatBox = ({ selectedContact }) => {
   }
 
   return (
-    <div className="flex flex-col h-full bg-white/50 backdrop-blur-sm">
+    <div className="flex flex-col h-full bg-black/50 backdrop-blur-sm">
       {/* Messages Container */}
       <div className="flex-1 overflow-hidden relative">
         {/* Background Pattern */}
@@ -178,14 +217,26 @@ export const ChatBox = ({ selectedContact }) => {
                     </div>
                     
                     {/* Message Bubble */}
-                    <div
-                      className={`px-4 py-3 rounded-2xl shadow-md max-w-full break-words transition-all duration-200 hover:shadow-lg ${
-                        isOwn
-                          ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-br-md"
-                          : "bg-white border border-gray-200 text-gray-800 rounded-bl-md"
-                      }`}
-                    >
-                      <p className="text-sm leading-relaxed">{msg.text}</p>
+                    <div className={`flex flex-col ${isOwn ? "items-end" : "items-start"}`}>
+                      <div
+                        className={`px-4 py-3 rounded-2xl shadow-md max-w-full break-words transition-all duration-200 hover:shadow-lg ${
+                          isOwn
+                            ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-br-md"
+                            : "bg-white border border-gray-200 text-gray-800 rounded-bl-md"
+                        }`}
+                      >
+                        <p className="text-sm leading-relaxed">{msg.text}</p>
+                      </div>
+                      {/* Timestamp */}
+                      <span
+                        className={`text-xs mt-1.5 px-1.5 ${
+                          isOwn
+                            ? "text-blue-100/80"
+                            : "text-gray-500"
+                        }`}
+                      >
+                        {formatMessageTime(msg.createdAt)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -198,19 +249,22 @@ export const ChatBox = ({ selectedContact }) => {
 
       {/* Typing Indicator */}
       {typingUsers.length > 0 && (
-        <div className="px-6 py-2 border-t border-gray-100">
-          <div className="flex items-center space-x-2">
-            <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-              {selectedContact.username?.[0]?.toUpperCase()}
+        <div className="relative z-10 px-6 py-3 border-t border-slate-200/50 bg-white/40 backdrop-blur-xl">
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-teal-500 rounded-full blur-md opacity-30"></div>
+              <div className="relative w-8 h-8 bg-gradient-to-r from-green-500 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-md">
+                {selectedContact.username?.[0]?.toUpperCase()}
+              </div>
             </div>
-            <div className="flex items-center space-x-1">
-              <span className="text-sm text-gray-600">
+            <div className="flex items-center space-x-2 bg-slate-100/80 backdrop-blur-sm px-4 py-2 rounded-full">
+              <span className="text-sm font-medium text-slate-600">
                 {typingUsers.join(", ")} {typingUsers.length > 1 ? "are" : "is"} typing
               </span>
-              <div className="flex space-x-1">
-                <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"></div>
-                <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+              <div className="flex space-x-1.5 ml-2">
+                <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full animate-bounce" style={{animationDelay: '0.15s'}}></div>
+                <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full animate-bounce" style={{animationDelay: '0.3s'}}></div>
               </div>
             </div>
           </div>
@@ -218,36 +272,43 @@ export const ChatBox = ({ selectedContact }) => {
       )}
 
       {/* Input Area */}
-      <div className="p-4 border-t border-gray-100 bg-white/80 backdrop-blur-sm">
+      <div className="relative z-10 p-5 border-t border-slate-200/50 bg-white/50 backdrop-blur-xl shadow-lg">
         <div className="flex items-center space-x-3">
-          <div className="flex-1 relative">
+          <div className="flex-1 relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm"></div>
             <input
               type="text"
               placeholder={`Message ${selectedContact.username}...`}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all duration-200 text-gray-800 placeholder-gray-500"
+              className="relative w-full px-5 py-4 bg-white/80 backdrop-blur-sm border border-slate-200/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400/50 transition-all duration-300 text-slate-800 placeholder-slate-400 shadow-sm hover:shadow-md focus:shadow-lg text-base"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKeyPress}
               autoComplete="off"
             />
             {input.trim() && (
-              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-green-400 rounded-full blur-md opacity-50 animate-pulse"></div>
+                  <div className="relative w-2.5 h-2.5 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full animate-pulse shadow-lg"></div>
+                </div>
               </div>
             )}
           </div>
           <button
-            className={`p-3 rounded-2xl font-semibold transition-all duration-200 shadow-md hover:shadow-lg ${
+            className={`relative p-4 rounded-2xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 group ${
               input.trim()
-                ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 transform hover:scale-105 active:scale-95"
-                : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700"
+                : "bg-slate-100 text-slate-400 cursor-not-allowed hover:scale-100"
             }`}
             onClick={sendMessage}
             disabled={!input.trim()}
             aria-label="Send message"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            {input.trim() && (
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
+            )}
+            <svg className="relative w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
             </svg>
           </button>
         </div>

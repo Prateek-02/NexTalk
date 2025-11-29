@@ -1,12 +1,12 @@
 import { useState} from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import { FaUserPlus, FaKey } from "react-icons/fa";
+import { FaUserPlus, FaKey, FaUser } from "react-icons/fa";
 
 export const Register = () => {
   const navigate = useNavigate();
   const { register: registerUser, loading, error } = useAuth();
-  const [form, setForm] = useState({ email: "", password: "", confirmPassword: "" });
+  const [form, setForm] = useState({ username: "", email: "", password: "", confirmPassword: "" });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -15,7 +15,7 @@ export const Register = () => {
       return;
     }
     try {
-      await registerUser(form.email, form.password);
+      await registerUser(form.username, form.email, form.password);
       navigate("/");
     } catch (error) {
       console.error(error);
@@ -99,6 +99,29 @@ export const Register = () => {
           <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 rounded-3xl"></div>
           <div className="relative space-y-8">
             <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Username Field */}
+              <div className="animate-fade-in">
+                <label className="text-sm font-semibold text-white/90 block mb-3">
+                  Username
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <div className="w-5 h-5 bg-gradient-to-r from-blue-400 to-purple-400 rounded-lg flex items-center justify-center">
+                      <FaUser className="text-white text-xs" />
+                    </div>
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    className="w-full pl-14 pr-4 py-4 border border-slate-600/30 rounded-2xl bg-slate-700/30 backdrop-blur-xl placeholder-slate-400 text-white focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all duration-300 group-hover:shadow-lg group-hover:shadow-blue-500/10 text-lg"
+                    placeholder="Enter your username"
+                    value={form.username}
+                    onChange={(e) => setForm({ ...form, username: e.target.value })}
+                  />
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                </div>
+              </div>
+
               {/* Email Field */}
               <div className="animate-fade-in">
                 <label className="text-sm font-semibold text-white/90 block mb-3">

@@ -2,10 +2,12 @@
 import { ChatBox } from "../components/ChatBox";
 import { useAuth } from "../hooks/useAuth";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 export const Home = () => {
   const { logout, user } = useAuth();
+  const navigate = useNavigate();
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedContact, setSelectedContact] = useState(null);
@@ -39,7 +41,7 @@ export const Home = () => {
       </div>
 
       {/* Sidebar */}
-      <aside className="w-80 bg-slate-900/50 backdrop-blur-2xl border-r border-slate-600/30 flex flex-col relative z-10 shadow-2xl">
+      <aside className="w-70 bg-slate-900/50 backdrop-blur-2xl border-r border-slate-600/30 flex flex-col relative z-10 shadow-2xl">
         {/* Modern Header */}
         <div className="p-6 border-b border-slate-600/30">
           {/* App Logo */}
@@ -56,12 +58,15 @@ export const Home = () => {
 
           {/* User Profile */}
           <div className="flex items-center justify-between p-2 bg-slate-700/40 backdrop-blur-xl rounded-2xl border border-slate-600/20">
-            <div className="flex items-center space-x-3">
-              <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
+            <div 
+              className="flex items-center space-x-3 flex-1 cursor-pointer hover:bg-slate-600/30 rounded-xl p-2 -m-2 transition-all duration-200 group"
+              onClick={() => navigate("/profile")}
+            >
+              <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg group-hover:scale-110 transition-transform duration-200">
                 {user?.username?.[0]?.toUpperCase()}
               </div>
-              <div>
-                <h2 className="font-semibold text-white text-lg">
+              <div className="flex-1">
+                <h2 className="font-semibold text-white text-lg group-hover:text-blue-300 transition-colors duration-200">
                   {user?.username || "My Profile"}
                 </h2>
               </div>
@@ -141,7 +146,7 @@ export const Home = () => {
       {/* Main Chat Area */}
       <main className="flex-1 flex flex-col relative z-10">
         {/* Chat Header */}
-        <header className="px-6 py-6 bg-slate-800/40 backdrop-blur-2xl border-b border-slate-600/30 shadow-lg">
+        <header className="px-3 py-3 bg-slate-800/40 backdrop-blur-2xl border-b border-slate-600/30 shadow-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {selectedContact ? (
