@@ -24,7 +24,6 @@ export const Profile = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [uploadingPic, setUploadingPic] = useState(false);
-  const [statusDropdown, setStatusDropdown] = useState(false);
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -37,21 +36,11 @@ export const Profile = () => {
   };
 
   const getStatusColor = (status) => {
-    switch (status) {
-      case "online": return "bg-green-400";
-      case "away": return "bg-yellow-400";
-      case "busy": return "bg-red-400";
-      default: return "bg-gray-400";
-    }
+    return status === "online" ? "bg-green-400" : "bg-gray-400";
   };
 
   const getStatusLabel = (status) => {
-    switch (status) {
-      case "online": return "Online";
-      case "away": return "Away";
-      case "busy": return "Busy";
-      default: return "Offline";
-    }
+    return status === "online" ? "Online" : "Offline";
   };
 
   const handleEdit = (field, currentValue) => {
@@ -97,6 +86,58 @@ export const Profile = () => {
     }
   };
 
+  const compressImage = (file, maxWidth = 400, maxHeight = 400, quality = 0.8) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // Calculate new dimensions
+          if (width > height) {
+            if (width > maxWidth) {
+              height = (height * maxWidth) / width;
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = (width * maxHeight) / height;
+              height = maxHeight;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Convert to base64 with compression
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error('Failed to compress image'));
+                return;
+              }
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            },
+            'image/jpeg',
+            quality
+          );
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -107,9 +148,9 @@ export const Profile = () => {
       return;
     }
 
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      setError("Image size must be less than 2MB");
+    // Validate file size (max 5MB before compression)
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image size must be less than 5MB");
       return;
     }
 
@@ -117,42 +158,18 @@ export const Profile = () => {
     setError(null);
 
     try {
-      // Convert to base64
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        try {
-          const base64String = reader.result;
-          await updateProfile({ profilePic: base64String });
-          setSuccess("Profile picture updated successfully!");
-          setTimeout(() => setSuccess(null), 3000);
-        } catch (err) {
-          setError(err.message || "Failed to upload profile picture");
-        } finally {
-          setUploadingPic(false);
-        }
-      };
-      reader.onerror = () => {
-        setError("Failed to read image file");
-        setUploadingPic(false);
-      };
-      reader.readAsDataURL(file);
-    } catch {
-      setError("Failed to process image");
+      // Compress and convert to base64
+      const base64String = await compressImage(file);
+      await updateProfile({ profilePic: base64String });
+      setSuccess("Profile picture updated successfully!");
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError(err.message || "Failed to upload profile picture");
+    } finally {
       setUploadingPic(false);
     }
   };
 
-  const handleStatusChange = async (newStatus) => {
-    try {
-      setError(null);
-      await updateProfile({ status: newStatus });
-      setStatusDropdown(false);
-      setSuccess("Status updated successfully!");
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      setError(err.message || "Failed to update status");
-    }
-  };
 
   const getAvatarDisplay = () => {
     if (user?.profilePic) {
@@ -291,41 +308,22 @@ export const Profile = () => {
               </h2>
 
               <div className="space-y-4">
-                {/* Status Field */}
+                {/* Status Field - Read Only */}
                 <div className="bg-slate-700/30 backdrop-blur-xl rounded-2xl p-5 border border-slate-600/20 hover:border-slate-500/30 transition-all duration-300">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 flex-1">
-                      <div className="w-12 h-12 bg-gradient-to-r from-green-500/20 to-teal-500/20 rounded-xl flex items-center justify-center">
-                        <FaCircle className={`w-5 h-5 ${getStatusColor(user?.status || "offline")}`} />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                          Status
-                        </p>
-                        <div className="relative">
-                          <button
-                            onClick={() => setStatusDropdown(!statusDropdown)}
-                            className="text-lg font-semibold text-white flex items-center space-x-2 hover:text-blue-400 transition-colors"
-                          >
-                            <span>{getStatusLabel(user?.status || "offline")}</span>
-                            <FaEdit className="w-3 h-3" />
-                          </button>
-                          {statusDropdown && (
-                            <div className="relative top-full left-0 mt-2 bg-slate-800/95 backdrop-blur-xl rounded-xl border border-slate-600/50 shadow-2xl z-50 min-w-[150px]">
-                              {["online", "away", "busy", "offline"].map((status) => (
-                                <button
-                                  key={status}
-                                  onClick={() => handleStatusChange(status)}
-                                  className="w-full px-4 py-3 text-left hover:bg-slate-700/50 transition-colors flex items-center space-x-2 first:rounded-t-xl last:rounded-b-xl"
-                                >
-                                  <div className={`w-3 h-3 rounded-full ${getStatusColor(status)}`}></div>
-                                  <span className="text-white">{getStatusLabel(status)}</span>
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-green-500/20 to-teal-500/20 rounded-xl flex items-center justify-center">
+                      <FaCircle className={`w-5 h-5 ${getStatusColor(user?.status || "offline")}`} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                        Status
+                      </p>
+                      <p className="text-lg font-semibold text-white">
+                        {getStatusLabel(user?.status || "offline")}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Status is automatically updated when you log in or out
+                      </p>
                     </div>
                   </div>
                 </div>

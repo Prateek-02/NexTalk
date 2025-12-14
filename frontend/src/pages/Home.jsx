@@ -4,6 +4,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { FaCircle } from "react-icons/fa";
 
 export const Home = () => {
   const { logout, user } = useAuth();
@@ -115,29 +116,59 @@ export const Home = () => {
                 <p className="text-xs text-slate-500 mt-1">Users will appear here when they join</p>
               </div>
             ) : (
-              contacts.map((c) => (
-                <div
-                  key={c._id}
-                  onClick={() => setSelectedContact(c)}
-                  className={`group flex items-center p-3 rounded-xl cursor-pointer transition-all duration-200 hover:scale-[1.01] ${
-                    selectedContact?._id === c._id
-                      ? "bg-blue-500/20 backdrop-blur-xl border border-blue-400/30 shadow-lg"
-                      : "hover:bg-slate-800/40 hover:backdrop-blur-xl hover:border hover:border-slate-600/20"
-                  }`}
-                >
-                  <div className="w-6 h-6 bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center rounded-full text-white font-semibold text-sm shadow-lg group-hover:shadow-xl transition-shadow duration-200">
-                    {c.username[0].toUpperCase()}
+              contacts.map((c) => {
+                const getStatusColor = (status) => {
+                  return status === "online" ? "bg-green-400" : "bg-gray-400";
+                };
+
+                const getStatusLabel = (status) => {
+                  return status === "online" ? "Online" : "Offline";
+                };
+
+                const status = c.status || "offline";
+                const statusColor = getStatusColor(status);
+                const statusLabel = getStatusLabel(status);
+
+                return (
+                  <div
+                    key={c._id}
+                    onClick={() => setSelectedContact(c)}
+                    className={`group flex items-center p-3 rounded-xl cursor-pointer transition-all duration-200 hover:scale-[1.01] ${
+                      selectedContact?._id === c._id
+                        ? "bg-blue-500/20 backdrop-blur-xl border border-blue-400/30 shadow-lg"
+                        : "hover:bg-slate-800/40 hover:backdrop-blur-xl hover:border hover:border-slate-600/20"
+                    }`}
+                  >
+                    <div className="relative">
+                      {c.profilePic ? (
+                        <img
+                          src={c.profilePic}
+                          alt={c.username}
+                          className="w-10 h-10 rounded-full object-cover border-2 border-slate-600 shadow-lg"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center rounded-full text-white font-semibold text-sm shadow-lg group-hover:shadow-xl transition-shadow duration-200">
+                          {c.username[0].toUpperCase()}
+                        </div>
+                      )}
+                      {/* Status Indicator */}
+                      <div
+                        className={`absolute bottom-0 right-0 w-3.5 h-3.5 ${statusColor} rounded-full border-2 border-slate-800 shadow-lg`}
+                        title={statusLabel}
+                      ></div>
+                    </div>
+                    <div className="ml-3 flex-1">
+                      <p className="font-semibold text-white text-sm group-hover:text-blue-100 transition-colors duration-200">
+                        {c.username}
+                      </p>
+                      <p className="text-xs text-slate-400 mt-0.5">{statusLabel}</p>
+                    </div>
+                    {selectedContact?._id === c._id && (
+                      <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></div>
+                    )}
                   </div>
-                  <div className="ml-3 flex-1">
-                    <p className="font-semibold text-white text-sm group-hover:text-blue-100 transition-colors duration-200">
-                      {c.username}
-                    </p>
-                  </div>
-                  {selectedContact?._id === c._id && (
-                    <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></div>
-                  )}
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
@@ -147,17 +178,46 @@ export const Home = () => {
       <main className="flex-1 flex flex-col relative z-10">
         {/* Chat Header */}
         <header className="px-3 py-3 bg-slate-800/40 backdrop-blur-2xl border-b border-slate-600/30 shadow-lg">
-          <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {selectedContact ? (
                 <>
-                  <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center rounded-full text-white font-semibold shadow-lg">
-                    {selectedContact.username[0].toUpperCase()}
+                  <div className="relative">
+                    {selectedContact.profilePic ? (
+                      <img
+                        src={selectedContact.profilePic}
+                        alt={selectedContact.username}
+                        className="w-10 h-10 rounded-full object-cover border-2 border-slate-600 shadow-lg"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center rounded-full text-white font-semibold shadow-lg">
+                        {selectedContact.username[0].toUpperCase()}
+                      </div>
+                    )}
+                    {/* Status Indicator */}
+                    {(() => {
+                      const getStatusColor = (status) => {
+                        return status === "online" ? "bg-green-400" : "bg-gray-400";
+                      };
+                      const getStatusLabel = (status) => {
+                        return status === "online" ? "Online" : "Offline";
+                      };
+                      const status = selectedContact.status || "offline";
+                      return (
+                        <div
+                          className={`absolute bottom-0 right-0 w-3.5 h-3.5 ${getStatusColor(status)} rounded-full border-2 border-slate-800 shadow-lg`}
+                          title={getStatusLabel(status)}
+                        ></div>
+                      );
+                    })()}
                   </div>
                   <div>
                     <h2 className="font-bold text-white text-xl">
                       {selectedContact.username}
                     </h2>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {selectedContact.status === "online" ? "Online" : "Offline"}
+                    </p>
                   </div>
                 </>
               ) : (

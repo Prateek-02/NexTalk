@@ -128,11 +128,32 @@ export const useAuth = () => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem(import.meta.env.VITE_JWT_KEY);
-    localStorage.removeItem(USER_CACHE_KEY);
-    setUser(null);
-    window.location.reload();
+  const logout = async () => {
+    try {
+      const token = getToken();
+      if (token) {
+        // Call backend to set status to offline
+        try {
+          await apiRef.current.post(
+            "/auth/logout",
+            {},
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            }
+          );
+        } catch (err) {
+          // Continue with logout even if API call fails
+          console.error("Failed to update status on logout:", err);
+        }
+      }
+    } catch (err) {
+      console.error("Logout error:", err);
+    } finally {
+      localStorage.removeItem(import.meta.env.VITE_JWT_KEY);
+      localStorage.removeItem(USER_CACHE_KEY);
+      setUser(null);
+      window.location.reload();
+    }
   };
 
   // ✅ Load cached user immediately, then fetch fresh data in background
