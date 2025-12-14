@@ -104,6 +104,30 @@ export const useAuth = () => {
     }
   };
 
+  const updateProfile = async (updates) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = getToken();
+      const { data } = await apiRef.current.put(
+        "/auth/me",
+        updates,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setUser(data.user);
+      cacheUser(data.user); // Update cache with new user data
+      return data;
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || "Failed to update profile";
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem(import.meta.env.VITE_JWT_KEY);
     localStorage.removeItem(USER_CACHE_KEY);
@@ -114,7 +138,8 @@ export const useAuth = () => {
   // ✅ Load cached user immediately, then fetch fresh data in background
   useEffect(() => {
     const token = getToken();
-    const hasCachedUser = user !== null;
+    // Check localStorage directly instead of state to avoid dependency issues
+    const hasCachedUser = !!localStorage.getItem(USER_CACHE_KEY);
     
     if (token && hasCachedUser) {
       // We have cached data, fetch fresh data in background without blocking
@@ -126,7 +151,7 @@ export const useAuth = () => {
     } else {
       setInitialLoading(false);
     }
-  }, [fetchUser]); // Include fetchUser in dependencies
+  }, [fetchUser]); // fetchUser is stable (empty deps), so this only runs on mount
 
-  return { login, register, logout, getToken, loading, error, user, initialLoading };
+  return { login, register, logout, getToken, loading, error, user, initialLoading, updateProfile };
 };
