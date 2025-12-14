@@ -134,6 +134,49 @@ router.put("/me", protect, async (req, res) => {
   }
 });
 
+router.put("/change-password", protect, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ message: "Current password and new password are required" });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ message: "New password must be at least 6 characters" });
+  }
+
+  try {
+    // Verify current password
+    const isMatch = await req.user.matchPassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Current password is incorrect" });
+    }
+
+    // Check if new password is different from current password
+    const isSamePassword = await req.user.matchPassword(newPassword);
+    if (isSamePassword) {
+      return res.status(400).json({ message: "New password must be different from current password" });
+    }
+
+    // Update password
+    req.user.password = newPassword;
+    await req.user.save();
+
+    res.json({
+      message: "Password changed successfully",
+    });
+  } catch (err) {
+    console.error("Change password error:", err);
+
+    if (err.name === "ValidationError") {
+      const messages = Object.values(err.errors).map((e) => e.message);
+      return res.status(400).json({ message: messages.join(", ") });
+    }
+
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 router.post("/logout", protect, async (req, res) => {
   try {
     // Set user status to offline on logout
