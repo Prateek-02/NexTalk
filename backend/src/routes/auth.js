@@ -33,6 +33,7 @@ router.post("/register", async (req, res) => {
       username,
       email,
       password,
+      status: 'online', // Set status to online on registration
     });
 
     const token = generateToken(user._id);
@@ -69,6 +70,10 @@ router.post("/login", async (req, res) => {
     if (!user || !(await user.matchPassword(password))) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
+
+    // Set user status to online on login
+    user.status = 'online';
+    await user.save();
 
     const token = generateToken(user._id);
 
@@ -108,7 +113,8 @@ router.put("/me", protect, async (req, res) => {
     req.user.email = email || req.user.email;
     req.user.profilePic =
       profilePic !== undefined ? profilePic : req.user.profilePic;
-    req.user.status = status || req.user.status;
+    // Don't allow manual status updates - it's managed automatically
+    // req.user.status is managed by login/logout
 
     const updatedUser = await req.user.save();
 
@@ -124,6 +130,18 @@ router.put("/me", protect, async (req, res) => {
       return res.status(400).json({ message: messages.join(", ") });
     }
 
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+router.post("/logout", protect, async (req, res) => {
+  try {
+    // Set user status to offline on logout
+    req.user.status = 'offline';
+    await req.user.save();
+    res.json({ message: "Logged out successfully" });
+  } catch (err) {
+    console.error("Logout error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });

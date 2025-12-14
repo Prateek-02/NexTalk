@@ -14,7 +14,8 @@ router.get("/", protect, async (req, res) => {
       .select("-password")
       .sort({ username: 1 });
 
-    res.json(users);
+    // Return users with safeUser virtual (includes status and profilePic)
+    res.json(users.map((u) => u.safeUser));
   } catch (err) {
     console.error("Error fetching users:", err);
     res.status(500).json({ message: "Server error" });

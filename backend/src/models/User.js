@@ -47,7 +47,7 @@ const userSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['online', 'offline', 'away', 'busy'],
+      enum: ['online', 'offline'],
       default: 'offline',
     },
   },
@@ -76,7 +76,7 @@ userSchema.methods.matchPassword = async function (plainPassword) {
 
 userSchema.virtual('safeUser').get(function () {
   return {
-    id: this._id,
+    _id: this._id,
     username: this.username,
     email: this.email,
     profilePic: this.profilePic || '',
