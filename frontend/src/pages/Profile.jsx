@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { FaUser, FaEnvelope, FaCalendarAlt, FaEdit, FaArrowLeft } from "react-icons/fa";
 
 export const Profile = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, initialLoading } = useAuth();
   const navigate = useNavigate();
 
   const formatDate = (dateString) => {
@@ -15,6 +15,29 @@ export const Profile = () => {
       day: "numeric",
     });
   };
+
+  // Show loading skeleton only if we have no cached user data
+  if (initialLoading && !user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-purple-950 relative overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute top-20 left-20 w-96 h-96 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-32 right-20 w-80 h-80 bg-gradient-to-br from-purple-500/15 to-pink-500/15 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        </div>
+        <div className="relative z-10 container mx-auto px-6 py-8">
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-slate-800/30 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 border border-slate-600/30 animate-pulse">
+              <div className="flex flex-col items-center mb-5">
+                <div className="w-32 h-32 bg-slate-700/50 rounded-full mb-4"></div>
+                <div className="h-8 w-48 bg-slate-700/50 rounded-lg mb-2"></div>
+                <div className="h-4 w-32 bg-slate-700/50 rounded-lg"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-purple-950 relative overflow-hidden">
