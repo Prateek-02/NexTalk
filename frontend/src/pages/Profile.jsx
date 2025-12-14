@@ -11,11 +11,14 @@ import {
   FaCheck,
   FaTimes,
   FaSpinner,
-  FaCircle
+  FaCircle,
+  FaLock,
+  FaEye,
+  FaEyeSlash
 } from "react-icons/fa";
 
 export const Profile = () => {
-  const { user, logout, initialLoading, updateProfile, loading } = useAuth();
+  const { user, logout, initialLoading, updateProfile, loading, changePassword } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   
@@ -24,6 +27,17 @@ export const Profile = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [uploadingPic, setUploadingPic] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: ""
+  });
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false
+  });
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -41,6 +55,67 @@ export const Profile = () => {
 
   const getStatusLabel = (status) => {
     return status === "online" ? "Online" : "Offline";
+  };
+
+  const getPasswordStrength = (password) => {
+    if (!password) return { strength: 0, label: "", color: "" };
+    
+    let strength = 0;
+    if (password.length >= 6) strength++;
+    if (password.length >= 8) strength++;
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
+    if (/\d/.test(password)) strength++;
+    if (/[^a-zA-Z\d]/.test(password)) strength++;
+
+    if (strength <= 2) return { strength, label: "Weak", color: "bg-red-500" };
+    if (strength === 3) return { strength, label: "Fair", color: "bg-yellow-500" };
+    if (strength === 4) return { strength, label: "Good", color: "bg-blue-500" };
+    return { strength, label: "Strong", color: "bg-green-500" };
+  };
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    const { currentPassword, newPassword, confirmPassword } = passwordData;
+
+    // Validation
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setError("All fields are required");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError("New password must be at least 6 characters");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError("New passwords do not match");
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      setError("New password must be different from current password");
+      return;
+    }
+
+    try {
+      await changePassword(currentPassword, newPassword);
+      setSuccess("Password changed successfully!");
+      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setShowPasswordForm(false);
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError(err.message || "Failed to change password");
+    }
+  };
+
+  const handlePasswordCancel = () => {
+    setShowPasswordForm(false);
+    setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    setError(null);
   };
 
   const handleEdit = (field, currentValue) => {
@@ -464,6 +539,166 @@ export const Profile = () => {
                     </div>
                   </div>
                 )}
+
+                {/* Password Change Section */}
+                <div className="bg-slate-700/30 backdrop-blur-xl rounded-2xl p-5 border border-slate-600/20 hover:border-slate-500/30 transition-all duration-300">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4 flex-1">
+                      <div className="w-12 h-12 bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-xl flex items-center justify-center">
+                        <FaLock className="w-5 h-5 text-orange-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                          Password
+                        </p>
+                        {!showPasswordForm ? (
+                          <p className="text-lg font-semibold text-white">••••••••</p>
+                        ) : (
+                          <form onSubmit={handlePasswordChange} className="space-y-4 mt-2">
+                            {/* Current Password */}
+                            <div>
+                              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                                Current Password
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type={showPasswords.current ? "text" : "password"}
+                                  value={passwordData.currentPassword}
+                                  onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                                  className="w-full bg-slate-800/50 border border-slate-600/50 rounded-lg px-3 py-2 pr-10 text-white focus:outline-none focus:border-blue-500"
+                                  placeholder="Enter current password"
+                                  required
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                                >
+                                  {showPasswords.current ? <FaEyeSlash /> : <FaEye />}
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* New Password */}
+                            <div>
+                              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                                New Password
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type={showPasswords.new ? "text" : "password"}
+                                  value={passwordData.newPassword}
+                                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                                  className="w-full bg-slate-800/50 border border-slate-600/50 rounded-lg px-3 py-2 pr-10 text-white focus:outline-none focus:border-blue-500"
+                                  placeholder="Enter new password"
+                                  required
+                                  minLength={6}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                                >
+                                  {showPasswords.new ? <FaEyeSlash /> : <FaEye />}
+                                </button>
+                              </div>
+                              {/* Password Strength Indicator */}
+                              {passwordData.newPassword && (
+                                <div className="mt-2">
+                                  <div className="flex items-center space-x-2 mb-1">
+                                    <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full transition-all duration-300 ${getPasswordStrength(passwordData.newPassword).color}`}
+                                        style={{ width: `${(getPasswordStrength(passwordData.newPassword).strength / 5) * 100}%` }}
+                                      ></div>
+                                    </div>
+                                    <span className={`text-xs font-semibold ${getPasswordStrength(passwordData.newPassword).color.replace('bg-', 'text-')}`}>
+                                      {getPasswordStrength(passwordData.newPassword).label}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-slate-500">
+                                    Must be at least 6 characters
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Confirm New Password */}
+                            <div>
+                              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                                Confirm New Password
+                              </label>
+                              <div className="relative">
+                                <input
+                                  type={showPasswords.confirm ? "text" : "password"}
+                                  value={passwordData.confirmPassword}
+                                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                                  className={`w-full bg-slate-800/50 border rounded-lg px-3 py-2 pr-10 text-white focus:outline-none ${
+                                    passwordData.confirmPassword && passwordData.newPassword !== passwordData.confirmPassword
+                                      ? "border-red-500"
+                                      : "border-slate-600/50 focus:border-blue-500"
+                                  }`}
+                                  placeholder="Confirm new password"
+                                  required
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                                >
+                                  {showPasswords.confirm ? <FaEyeSlash /> : <FaEye />}
+                                </button>
+                              </div>
+                              {passwordData.confirmPassword && passwordData.newPassword !== passwordData.confirmPassword && (
+                                <p className="text-xs text-red-400 mt-1">Passwords do not match</p>
+                              )}
+                            </div>
+
+                            {/* Form Actions */}
+                            <div className="flex items-center space-x-2 pt-2">
+                              <button
+                                type="submit"
+                                disabled={loading || passwordData.newPassword !== passwordData.confirmPassword}
+                                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                              >
+                                {loading ? (
+                                  <>
+                                    <FaSpinner className="animate-spin" />
+                                    <span>Changing...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <FaCheck />
+                                    <span>Change Password</span>
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handlePasswordCancel}
+                                className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-lg transition-all duration-300 flex items-center justify-center"
+                              >
+                                <FaTimes />
+                              </button>
+                            </div>
+                          </form>
+                        )}
+                      </div>
+                    </div>
+                    {!showPasswordForm && (
+                      <button
+                        onClick={() => {
+                          setShowPasswordForm(true);
+                          setError(null);
+                          setSuccess(null);
+                        }}
+                        className="p-2 hover:bg-slate-600/50 rounded-lg transition-colors"
+                      >
+                        <FaEdit className="w-4 h-4 text-slate-400 hover:text-orange-400" />
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           </div>

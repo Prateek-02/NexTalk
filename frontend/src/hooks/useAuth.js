@@ -128,6 +128,28 @@ export const useAuth = () => {
     }
   };
 
+  const changePassword = async (currentPassword, newPassword) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = getToken();
+      const { data } = await apiRef.current.put(
+        "/auth/change-password",
+        { currentPassword, newPassword },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      return data;
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || "Failed to change password";
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = async () => {
     try {
       const token = getToken();
@@ -174,5 +196,5 @@ export const useAuth = () => {
     }
   }, [fetchUser]); // fetchUser is stable (empty deps), so this only runs on mount
 
-  return { login, register, logout, getToken, loading, error, user, initialLoading, updateProfile };
+  return { login, register, logout, getToken, loading, error, user, initialLoading, updateProfile, changePassword };
 };
