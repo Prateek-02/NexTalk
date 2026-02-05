@@ -41,8 +41,7 @@ NexTalk/
 ├── package.json # Root package config (optional)
 └── README.md # This file
 ```
-yaml
-Copy code
+
 
 ---
 
@@ -70,49 +69,37 @@ Copy code
 ```bash
 git clone https://github.com/Prateek-02/NexTalk.git
 cd NexTalk
+
 2) Setup Backend
-bash
-Copy code
 cd backend
 npm install
 Create a .env file in backend/ with:
-
-ini
-Copy code
 PORT=5000
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_jwt_secret_here
 CLIENT_URL=http://localhost:3000
-Start the backend server:
 
-bash
-Copy code
+Start the backend server:
 npm run start
+
 3) Setup Frontend
-bash
-Copy code
 cd ../frontend
 npm install
 npm start
-Frontend should now run at:
 
-arduino
-Copy code
-http://localhost:3000
+Frontend should now run at:
+http://localhost:5173
+
 📌 Environment Variables
 Backend .env
-
-ini
-Copy code
 PORT=5000
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=some_secret_key
-CLIENT_URL=http://localhost:3000
-Frontend .env (if used)
+CLIENT_URL=http://localhost:5173
 
-ini
-Copy code
+Frontend .env (if used)
 REACT_APP_API_URL=http://localhost:5000
+
 📡 API Endpoints (Sample)
 Method	Endpoint	Description
 POST	/api/auth/register	Register a user
@@ -147,15 +134,11 @@ Online Status Indicator
 
 📦 Scripts
 Backend
+npm run dev
 
-powershell
-Copy code
-npm start
 Frontend
+npm run dev
 
-powershell
-Copy code
-npm start
 🚢 Deployment
 To deploy:
 
@@ -191,6 +174,3 @@ MongoDB & Mongoose
 Axios / fetch
 
 Community contributors
-
-yaml
-Copy code
